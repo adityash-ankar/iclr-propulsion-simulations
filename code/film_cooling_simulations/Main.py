@@ -3,6 +3,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import sys
 # Enable LaTeX rendering
 plt.rcParams['text.usetex'] = False
 plt.rcParams['font.family'] = 'serif'  # This works well with LaTeX
@@ -39,7 +40,11 @@ Material         = 'AlSi10Mg'  # 'Inconel', 'AlSi10Mg', 'ABD900'
 Chamber_Pressure = 30 # bar
 Feed_Pressure    = 40.0   # bar
 Thrust_req       = 5000.0 # N
-OF               = 3.25
+
+# None whichever one isnt needed
+core_OF          = None
+feed_OF          = 3.0
+
 CR               = 6    # contraction ratio Ac/At
 Lstar_target_mm  = 750.0  # mm (chamber only)
 tw               = 0.7e-3 # wall thickness [m]
@@ -47,6 +52,20 @@ channel_height   = 1.2e-3 # [m]
 arc_angle        = 3.8    # degrees
 n                = 50     # channels
 fcp              = 0.275   # film-cooling percentage 
+
+if core_OF == None and feed_OF ==None:
+    print("Define either Feed O/F ratio of Core O/F Ratio. ")
+    sys.exit()
+elif core_OF != None and feed_OF != None:
+    print("Both Feed O/F ratio of Core O/F Ratio defined, define only one. ")
+    sys.exit()
+elif core_OF == None:
+    OF = feed_OF/(1+fcp)
+    core_OF = OF
+    
+elif feed_OF == None:
+    OF = core_OF
+    feed_OF =  core_OF * (1 + fcp)
 
 #Graphs
 Complete_Thermal_Analysis = True
