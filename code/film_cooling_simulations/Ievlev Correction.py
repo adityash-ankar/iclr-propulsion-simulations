@@ -9,7 +9,7 @@ plt.rcParams['font.family'] = 'serif'  # This works well with LaTeX
 plt.rcParams['text.latex.preamble'] = r''  # Empty or no override
 from rocketcea.cea_obj import CEA_Obj
 from pyfluids import Fluid, FluidsList, Input, Phases
-from CoolProp.CoolProp import PropsSI
+from CoolProp.CoolProp import PropsSI   
 from scipy.ndimage import median_filter
 import scipy as sp
 
@@ -37,10 +37,10 @@ Material         = 'AlSi10Mg'  # 'Inconel', 'AlSi10Mg', 'ABD900'
 
 Chamber_Pressure = 30 # bar
 Feed_Pressure    = 40.0   # bar
-Thrust_req       = 6000.0 # N
+Thrust_req       = 5000.0 # N
 OF               = 3
-CR               = 4.5    # contraction ratio Ac/At
-Lstar_target_mm  = 600.0  # mm (chamber only)
+CR               = 6    # contraction ratio Ac/At
+Lstar_target_mm  = 750.0  # mm (chamber only)
 tw               = 0.7e-3 # wall thickness [m]
 channel_height   = 1.5e-3 # [m]
 arc_angle        = 3.8    # degrees
@@ -51,11 +51,11 @@ fcp              = 0.275   # film-cooling percentage
 Complete_Thermal_Analysis = True
 Thermal_Diagnostic_3x3    = True
 Film_Cooling_vs_No_FC     = True
-SF_and_Temps_3D           = True #Looks Great, Takes like 5 Minutes to run, proceed with caution
+SF_and_Temps_3D           = False #Looks Great, Takes like 5 Minutes to run, proceed with caution
 Stress_Plot               = True
 # Efficiencies
-eta_cstar = 0.94
-eta_Cf    = 0.98
+eta_cstar = 0.959
+eta_Cf    = 0.923
 
 #%%==========================[CEA / IDEAL PERFORMANCE]=========================
 ispObj = CEA_Obj(oxName=ox, fuelName=fuel)

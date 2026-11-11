@@ -28,6 +28,7 @@ dependencies = [
     "rocketprops>=0.1.9",
     "thermo>=0.6.1",
     "plotly>=7.0.0",
+    "rocketcea>=1.2.3",
 ]
 
 [build-system]
