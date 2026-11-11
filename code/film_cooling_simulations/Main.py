@@ -51,8 +51,19 @@ tw               = 0.7e-3 # wall thickness [m]
 channel_height   = 1.2e-3 # [m]
 arc_angle        = 3.8    # degrees
 n                = 50     # channels
-fcp              = 0.275   # film-cooling percentage 
+fcp              = 0.10  # film-cooling percentage 
 
+#Graphs
+Complete_Thermal_Analysis = True
+Thermal_Diagnostic_3x3    = False
+Film_Cooling_vs_No_FC     = False
+SF_and_Temps_3D           = False #Looks Great, Takes like 5 Minutes to run, proceed with caution
+Stress_Plot               = True
+# Efficiencies
+eta_cstar = 0.959
+eta_Cf    = 0.923
+
+# %% ========================= OF Calculations =========================
 if core_OF == None and feed_OF ==None:
     print("Define either Feed O/F ratio of Core O/F Ratio. ")
     sys.exit()
@@ -66,17 +77,7 @@ elif core_OF == None:
 elif feed_OF == None:
     OF = core_OF
     feed_OF =  core_OF * (1 + fcp)
-
-#Graphs
-Complete_Thermal_Analysis = True
-Thermal_Diagnostic_3x3    = False
-Film_Cooling_vs_No_FC     = False
-SF_and_Temps_3D           = False #Looks Great, Takes like 5 Minutes to run, proceed with caution
-Stress_Plot               = True
-# Efficiencies
-eta_cstar = 0.94
-eta_Cf    = 0.98
-
+    
 # %% ========================= CEA / ideal performance =========================
 ispObj = CEA_Obj(oxName=ox, fuelName=fuel)
 
