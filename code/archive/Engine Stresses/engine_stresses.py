@@ -51,7 +51,7 @@ columns = ['axial_pos', 'radius', 'conv_hf_coeff', 'q_conv', 'q_rad', 'q_total',
            'coolant_velocity', 'coolant_density']
 
 base_path = os.path.dirname(__file__)
-file_path = os.path.join(base_path, 'RPA_Thermals.txt')
+file_path = r"C:\Repos\iclr_simulations\code\film_cooling_simulations\Sim_Thermals.txt"
 # file_path = os.path.join(base_path, 'Sim_Thermals.txt')
 with open(file_path, 'r', encoding="utf8") as input_file:
     lines = input_file.readlines()

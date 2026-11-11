@@ -38,22 +38,22 @@ Material         = 'AlSi10Mg'  # 'Inconel', 'AlSi10Mg', 'ABD900'
 
 Chamber_Pressure = 30 # bar
 Feed_Pressure    = 40.0   # bar
-Thrust_req       = 6000.0 # N
-OF               = 4.7
-CR               = 4.5    # contraction ratio Ac/At
-Lstar_target_mm  = 600.0  # mm (chamber only)
+Thrust_req       = 5000.0 # N
+OF               = 3.25
+CR               = 6    # contraction ratio Ac/At
+Lstar_target_mm  = 750.0  # mm (chamber only)
 tw               = 0.7e-3 # wall thickness [m]
-channel_height   = 1.5e-3 # [m]
+channel_height   = 1.2e-3 # [m]
 arc_angle        = 3.8    # degrees
 n                = 50     # channels
-fcp              = 0.2   # film-cooling percentage
+fcp              = 0.275   # film-cooling percentage 
 
 #Graphs
 Complete_Thermal_Analysis = True
 Thermal_Diagnostic_3x3    = False
 Film_Cooling_vs_No_FC     = False
 SF_and_Temps_3D           = False #Looks Great, Takes like 5 Minutes to run, proceed with caution
-Stress_Plot               = False
+Stress_Plot               = True
 # Efficiencies
 eta_cstar = 0.94
 eta_Cf    = 0.98
@@ -243,10 +243,6 @@ ddy_smooth = sp.ndimage.gaussian_filter1d(ddy_raw, sigma=30)
 ddy_func = CubicSpline(x_nodes_smooth, ddy_smooth)
 x_nodes = x_nodes_smooth
 y_nodes = y_nodes_smooth
-# Final check of resolution
-print(f"Total axial nodes: {len(x_nodes)}")
-print(f"Total axial segments: {len(x_seg)}")
-
 # %% ========================== Material properties ==========================
 if Material == 'Inconel718':
     Surf_roughness      = np.array([54, 38, 12, 6, 5]) * 1e-6 * 10
@@ -1166,6 +1162,8 @@ Twc_fc_rev[-1] = Twc_fc_rev[-2]
 qg_fc_rev[-1]  = qg_fc_rev[-2]
 
 
+
+
 # %% -------------------- Iterate until coolant temperature converges --------------------
 iter_count = 0
 while abs(Tc_fc_rev[-1] - T_fcool_array[0])/T_fcool_array[0] >1e-4 and iter_count < 25:
@@ -2040,5 +2038,119 @@ with open(output_filename, 'w') as f:
         # Format columns with explicit spacing to match RPA text output
         row_str = f"{loc:10.4f}\t{rad:11.4f}\t{h_conv:11.4f}\t{q_conv:11.4f}\t{q_rad:11.4f}\t{q_tot:11.4f}\t{t_wg:11.4f}\t{t_wi:11.4f}\t{t_wc:11.4f}\t{t_c:11.4f}\t{p_c:11.4f}\t{v_c:11.4f}\t{rho_c:11.4f}\t {comment}\n"
         f.write(row_str)
+
+
+
+# %% ============================ Results summary ============================
+def _section(title):
+    print(f"\n{'=' * 8} {title} {'=' * (60 - len(title))}")
+
+def _loc(arr, fn):
+    """Index and axial position [mm] of the min/max of arr."""
+    idx = int(fn(arr))
+    return idx, x_seg_mm[idx]
+
+# --- Performance ---
+_section("PERFORMANCE")
+print(f"Propellants          : {ox} / {fuel}, O/F = {OF:.2f}")
+print(f"Chamber pressure     : {Chamber_Pressure:.1f} bar  (feed {Feed_Pressure:.1f} bar)")
+print(f"Thrust (SL, actual)  : {F_check_SL:.1f} N  (target {Thrust_req:.0f} N)")
+print(f"Isp SL / vac (ideal) : {ISP_SL_act:.1f} s  /  {ISP_vac_ideal:.1f} s")
+print(f"c* ideal / actual    : {cstar_ideal:.1f} / {cstar_act:.1f} m/s")
+print(f"Cf SL ideal / actual : {Cf_SL_ideal:.3f} / {Cf_SL_act:.3f}")
+print(f"Chamber temp (T0)    : {T0:.0f} K")
+print(f"Mass flow            : {mdot_act:.3f} kg/s total "
+      f"({ox_mdot:.3f} ox, {fuel_mdot:.3f} fuel, {fuel_mdot*fcp:.3f} film)")
+
+# --- Geometry ---
+_section("GEOMETRY")
+print(f"Throat radius / dia  : {Rt_mm:.2f} mm / {2*Rt_mm:.2f} mm")
+print(f"Chamber radius       : {Rc_mm:.2f} mm  (CR = {CR:.1f})")
+print(f"Exit radius          : {Re_mm:.2f} mm  (area ratio = {Area_Ratio:.2f})")
+print(f"Cylinder length      : {Lcyl_mm:.1f} mm  (L* = {Lstar_target_mm:.0f} mm)")
+print(f"Total length         : {x_nodes_mm.max() - x_nodes_mm.min():.1f} mm  "
+      f"(throat at x = {x_throat:.1f} mm)")
+print(f"Material / wall      : {Material}, {tw*1e3:.2f} mm wall")
+
+# --- Cooling channels ---
+_section("COOLING CHANNELS")
+print(f"Channels             : {n} x {channel_height*1e3:.2f} mm tall")
+print(f"Channel width        : {np.min(channel_width)*1e3:.2f} mm (min) to "
+      f"{np.max(channel_width)*1e3:.2f} mm (max)")
+print(f"Hydraulic diameter   : {np.min(Dh)*1e3:.2f} mm (min) to {np.max(Dh)*1e3:.2f} mm (max)")
+print(f"Coolant Reynolds no. : {np.min(Re_array):.3g} to {np.max(Re_array):.3g}")
+
+# --- Coolant ---
+_section("COOLANT (ETHANOL)")
+dP_regen = feed_press - regen_pressures[-2]
+print(f"Inlet / outlet temp  : {tc_array[0]:.1f} K / {Tc_fc_rev[-1]:.1f} K")
+print(f"Max bulk temp        : {np.max(Tc_s):.1f} K")
+print(f"Regen pressure drop  : {dP_regen/1e5:.2f} bar "
+      f"({100*dP_regen/feed_press:.1f}% of feed)")
+print(f"Injector dP margin   : {(feed_press - dP_regen - Pc_SI)/1e5:.2f} bar "
+      f"(coolant outlet P minus chamber P)")
+if boiling_mask.any():
+    print(f"Bulk boiling         : YES, x = {x[boiling_mask].min():.1f} to {x[boiling_mask].max():.1f} mm")
+else:
+    print("Bulk boiling         : none")
+
+# --- Film cooling ---
+_section("FILM COOLING")
+final_resid = abs(Tc_fc_rev[-1] - T_fcool_array[0]) / T_fcool_array[0]
+print(f"Film fraction        : {fcp*100:.1f}% of fuel")
+if burnout_idx == 0:
+    print("Film status          : flashes to vapour at injector face")
+elif burnout_idx >= throat_idx:
+    print(f"Film status          : survives to throat (x = {x_seg_mm[throat_idx]:.1f} mm)")
+else:
+    print(f"Film burnout         : x = {film_phase_x:.1f} mm "
+          f"({film_phase_x / x_seg_mm[throat_idx] * 100:.0f}% of the way to the throat)")
+print(f"Coolant T iteration  : {iter_count} iterations, residual {final_resid:.2e}")
+
+# --- Thermal ---
+_section("THERMAL")
+i_twg, x_twg = _loc(Twg_fc_array, np.argmax)
+i_qg,  x_qg  = _loc(qg_fc_array,  np.argmax)
+i_twc, x_twc = _loc(Twc_fc_array, np.argmax)
+print(f"Max gas-side wall T  : {Twg_fc_array[i_twg]:.0f} K at x = {x_twg:.1f} mm "
+      f"(no film: {np.max(Twg_fwd):.0f} K)")
+print(f"Max coolant-side T   : {Twc_fc_array[i_twc]:.0f} K at x = {x_twc:.1f} mm")
+print(f"Peak heat flux       : {qg_fc_array[i_qg]/1e6:.2f} MW/m^2 at x = {x_qg:.1f} mm "
+      f"(no film: {np.max(qg_fwd)/1e6:.2f})")
+print(f"Total heat to coolant: {np.sum(qg_fc_array * 2*np.pi*radii * np.gradient(ax_pos))/1e3:.1f} kW")
+
+# --- Structural ---
+_section("STRUCTURAL")
+i_sf, x_sf = _loc(yield_sf, np.nanargmin)
+i_vm, x_vm = _loc(von_mises_stress, np.nanargmax)
+print(f"Min yield SF         : {yield_sf[i_sf]:.2f} at x = {x_sf:.1f} mm "
+      f"(Twg there {Twg_fc_array[i_sf]:.0f} K)")
+print(f"Max von Mises        : {von_mises_stress[i_vm]/1e6:.1f} MPa at x = {x_vm:.1f} mm")
+print(f"Max thermal / pressure tangential stress: "
+      f"{np.nanmax(tangential_thermal_stress)/1e6:.1f} / "
+      f"{np.nanmax(tangential_pressure_stress)/1e6:.1f} MPa")
+
+# --- Warnings ---
+warnings_list = []
+if np.nanmin(yield_sf) < 1.0:
+    warnings_list.append(f"Yield SF below 1 ({np.nanmin(yield_sf):.2f}) at x = {x_sf:.1f} mm")
+if boiling_mask.any():
+    warnings_list.append("Coolant bulk temperature exceeds Tsat somewhere in the channels")
+floor_hits = int(np.sum(regen_pressures[:-1] <= 1.0001e5))
+if floor_hits:
+    warnings_list.append(f"Coolant pressure hit the 1 bar floor in {floor_hits} segments "
+                         f"(feed pressure too low / dP too high)")
+if final_resid > 1e-4:
+    warnings_list.append(f"Coolant temperature loop did not converge (residual {final_resid:.2e})")
+if F_check_SL and abs(F_check_SL - Thrust_req) / Thrust_req > 0.01:
+    warnings_list.append("Thrust deviates from target by more than 1%")
+
+_section("WARNINGS")
+if warnings_list:
+    for w_msg in warnings_list:
+        print(f"! {w_msg}")
+else:
+    print("None")
+print("=" * 70)
 
 print(f"Exported thermal results to {output_filename}")
