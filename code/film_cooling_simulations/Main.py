@@ -1,5 +1,4 @@
 # %% ------------------------- Helper functions and bookkeeping -------------------------
-
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -51,22 +50,20 @@ tw               = 0.7e-3 # wall thickness [m]
 channel_height   = 1.2e-3 # [m]
 arc_angle        = 3.8    # degrees
 n                = 50     # channels
-fcp              = 0.275   # film-cooling percentage 
+fcp              = 0.1   # film-cooling percentage 
 
-if core_OF == None and feed_OF ==None:
-    print("Define either Feed O/F ratio of Core O/F Ratio. ")
+if core_OF is None and feed_OF is None:
+    print("Define either Feed O/F or Core O/F.")
     sys.exit()
-elif core_OF != None and feed_OF != None:
-    print("Both Feed O/F ratio of Core O/F Ratio defined, define only one. ")
+elif core_OF is not None and feed_OF is not None:
+    print("Both Feed O/F and Core O/F defined, define only one.")
     sys.exit()
-elif core_OF == None:
-    OF = feed_OF/(1+fcp)
-    core_OF = OF
-    
-elif feed_OF == None:
+elif core_OF is None:
+    core_OF = feed_OF / (1 - fcp)
     OF = core_OF
-    feed_OF =  core_OF * (1 + fcp)
-
+else:
+    feed_OF = core_OF * (1 - fcp)
+    OF = core_OF
 #Graphs
 Complete_Thermal_Analysis = True
 Thermal_Diagnostic_3x3    = False
