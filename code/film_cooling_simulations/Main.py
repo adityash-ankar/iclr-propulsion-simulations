@@ -41,8 +41,8 @@ Feed_Pressure    = 40.0   # bar
 Thrust_req       = 5000.0 # N
 
 # None whichever one isnt needed
-core_OF          = None
-feed_OF          = 3.0
+core_OF          = 3.0
+feed_OF          = None
 
 CR               = 6    # contraction ratio Ac/At
 Lstar_target_mm  = 750.0  # mm (chamber only)
