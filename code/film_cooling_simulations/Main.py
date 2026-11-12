@@ -60,9 +60,9 @@ Feed_Pressure    = 40.0   # bar
 Thrust_req       = 5000.0 # N
 
 # Set ONE of these, leave the other as None.
-# feed_OF = ox / total fuel (incl. film);  core_OF = ox / core fuel (excl. film)
+# feed_OF = ox / total fuel (core + film);  core_OF = ox / core fuel (excl. film)
 core_OF          = None
-feed_OF          = 3.0
+feed_OF          = 3.5
 
 CR               = 6      # contraction ratio Ac/At
 Lstar_target_mm  = 750.0  # mm (chamber only)
@@ -70,7 +70,7 @@ tw               = 0.7e-3 # wall thickness [m]
 channel_height   = 1.2e-3 # [m]
 arc_angle        = 3.8    # degrees
 n                = 50     # channels
-fcp              = 0.1    # film-cooling fraction of TOTAL fuel flow
+fcp              = 0.2    # film-cooling flow as a fraction of CORE fuel flow (film = fcp * core fuel)
 
 # Efficiencies
 eta_cstar = 0.959
@@ -102,9 +102,10 @@ elif core_OF is not None and feed_OF is not None:
     print("Both Feed O/F and Core O/F defined, define only one.")
     sys.exit()
 elif core_OF is None:
-    core_OF = feed_OF / (1 - fcp)
+    # total fuel = core fuel * (1 + fcp)  ->  ox/core_fuel = (ox/total_fuel) * (1 + fcp)
+    core_OF = feed_OF * (1 + fcp)
 else:
-    feed_OF = core_OF * (1 - fcp)
+    feed_OF = core_OF / (1 + fcp)
 OF = core_OF   # O/F seen by CEA (the core mixture)
 
 # %% ========================= CEA / ideal performance =========================
@@ -311,8 +312,8 @@ def lam_wall(T):
 # %% ============================ Regen preparation ============================
 core_fuel_mdot = mdot_act / (OF + 1)
 ox_mdot        = mdot_act * OF / (OF + 1)
-fuel_mdot      = core_fuel_mdot / (1 - fcp)     # total fuel, incl. film
-film_mdot      = fuel_mdot * fcp
+film_mdot      = fcp * core_fuel_mdot            # film = fcp x core fuel flow
+fuel_mdot      = core_fuel_mdot + film_mdot      # total fuel, incl. film (= core * (1 + fcp))
 feed_press     = Feed_Pressure * 1e5
 
 # Channel width from printing arc
@@ -692,7 +693,7 @@ def solve_film(T_film_in):
     Taw_g  = np.zeros(Lg)
     Tsat_b = float(ethanol_Tsat_from_P(pressure_array[burnout]))
     Taw_g[0] = np.clip(Tsat_b, T_f, Te_fwd[burnout])
-    mdot_total_core = ox_mdot + fuel_mdot * (1 - fcp)
+    mdot_total_core = ox_mdot + core_fuel_mdot   # core mass flow (ox + core fuel, excl. film)
 
     for i in range(burnout, Nseg - 1):
         j = i - burnout
@@ -1121,8 +1122,13 @@ print(f"Isp vac (ideal)      : {ISP_vac_ideal:.1f} s")
 print(f"c* ideal / actual    : {cstar_ideal:.1f} / {cstar_act:.1f} m/s")
 print(f"Cf SL ideal / actual : {Cf_SL_ideal:.3f} / {Cf_SL_act:.3f}")
 print(f"Chamber temp (T0)    : {T0:.0f} K")
-print(f"Mass flow            : {F_total_prop:.3f} kg/s total "
-      f"({ox_mdot:.3f} ox, {fuel_mdot:.3f} fuel of which {film_mdot:.3f} film)")
+print("\n")
+print(f"Total Chamber Mass flow : {F_total_prop:.3f} kg/s")
+print(f"Total Ox Mass flow      : {ox_mdot:.3f} kg/s")
+print(f"Total Fuel Mass flow    : {fuel_mdot:.3f} kg/s")
+print(f"Core Fuel Mass flow     : {fuel_mdot - film_mdot:.3f} kg/s")
+print(f"F.C. Mass flow          : {film_mdot:.3f} kg/s")
+
 
 _section("GEOMETRY")
 print(f"Throat radius / dia  : {Rt_mm:.2f} mm / {2 * Rt_mm:.2f} mm")
@@ -1159,7 +1165,8 @@ else:
     print("Wall boiling (Twc>Ts): none")
 
 _section("FILM COOLING")
-print(f"Film fraction        : {fcp * 100:.1f}% of total fuel ({film_mdot:.3f} kg/s)")
+print(f"Film fraction        : {fcp * 100:.1f}% of core fuel ({film_mdot:.3f} kg/s, "
+      f"{100 * film_mdot / fuel_mdot:.1f}% of total fuel)")
 if burnout_idx == 0:
     print("Film status          : flashes to vapour at injector face")
 elif burnout_idx >= throat_idx:
